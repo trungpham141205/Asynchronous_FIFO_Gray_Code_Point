@@ -31,18 +31,16 @@ module asyn_fifo_write_ctrl #(
     assign wr_addr   = wr_bin_r[ADDR_WIDTH-1:0];
     assign wr_accept = wr_reset_done && wr_en && !wr_full;
 
+    // Full occurs when the prospective write Gray pointer equals the
+    // synchronized read Gray pointer with its two most-significant bits flipped.
     always_comb begin
         wr_bin_next  = wr_bin_r + wr_accept;
         wr_gray_next = (wr_bin_next >> 1) ^ wr_bin_next;
-    end
-
-    // Full occurs when the prospective write Gray pointer equals the
-    // synchronized read Gray pointer with its two most-significant bits flipped.
-    assign wr_full_next =
-        (wr_gray_next == {
+        wr_full_next = (wr_gray_next == {
             ~rd_gray_sync[PTR_WIDTH-1:PTR_WIDTH-2],
              rd_gray_sync[PTR_WIDTH-3:0]
         });
+    end
 
     // Write-pointer datapath registers.
     always_ff @(posedge wr_clk or negedge wr_rst_n) begin

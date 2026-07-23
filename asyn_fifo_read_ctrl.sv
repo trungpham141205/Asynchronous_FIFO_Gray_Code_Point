@@ -32,14 +32,13 @@ module asyn_fifo_read_ctrl #(
     assign rd_addr   = rd_bin_r[ADDR_WIDTH-1:0];
     assign rd_accept = rd_reset_done && rd_en && !rd_empty;
 
-    always_comb begin
-        rd_bin_next  = rd_bin_r + rd_accept;
-        rd_gray_next = (rd_bin_next >> 1) ^ rd_bin_next;
-    end
-
     // Equal prospective read and synchronized write pointers mean that no
     // readable element remains after the current read operation.
-    assign rd_empty_next = (rd_gray_next == wr_gray_sync);
+    always_comb begin
+        rd_bin_next   = rd_bin_r + rd_accept;
+        rd_gray_next  = (rd_bin_next >> 1) ^ rd_bin_next;
+        rd_empty_next = (rd_gray_next == wr_gray_sync);
+    end
 
     // Read-pointer datapath registers.
     always_ff @(posedge rd_clk or negedge rd_rst_n) begin

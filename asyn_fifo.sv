@@ -29,6 +29,9 @@ module asyn_fifo #(
     output logic underflow
 );
 
+    // Either external reset request asynchronously flushes the complete FIFO.
+    logic fifo_rst_n;
+
     // Local reset-release status
     logic wr_reset_done;
     logic rd_reset_done;
@@ -45,24 +48,26 @@ module asyn_fifo #(
     logic [PTR_WIDTH-1:0] wr_gray_sync;
     logic [PTR_WIDTH-1:0] rd_gray_sync;
 
-    asyn_fifo_reset_sync u_wr_reset_sync (
+    assign fifo_rst_n = wr_rst_n & rd_rst_n;
+
+    asyn_fifo_reset_sync wr_reset_sync_inst (
         .clk(wr_clk),
-        .rst_n(wr_rst_n),
+        .rst_n(fifo_rst_n),
         .reset_done(wr_reset_done)
     );
 
-    asyn_fifo_reset_sync u_rd_reset_sync (
+    asyn_fifo_reset_sync rd_reset_sync_inst (
         .clk(rd_clk),
-        .rst_n(rd_rst_n),
+        .rst_n(fifo_rst_n),
         .reset_done(rd_reset_done)
     );
 
     // Synchronize the read pointer into the write clock domain.
     asyn_fifo_gray_sync #(
         .WIDTH(PTR_WIDTH)
-    ) u_rd_gray_to_wr (
+    ) rd_gray_to_wr_inst (
         .dst_clk(wr_clk),
-        .dst_rst_n(wr_rst_n),
+        .dst_rst_n(fifo_rst_n),
         .dst_reset_done(wr_reset_done),
         .async_gray(rd_gray),
         .sync_gray(rd_gray_sync)
@@ -71,9 +76,9 @@ module asyn_fifo #(
     // Synchronize the write pointer into the read clock domain.
     asyn_fifo_gray_sync #(
         .WIDTH(PTR_WIDTH)
-    ) u_wr_gray_to_rd (
+    ) wr_gray_to_rd_inst (
         .dst_clk(rd_clk),
-        .dst_rst_n(rd_rst_n),
+        .dst_rst_n(fifo_rst_n),
         .dst_reset_done(rd_reset_done),
         .async_gray(wr_gray),
         .sync_gray(wr_gray_sync)
@@ -82,9 +87,9 @@ module asyn_fifo #(
     asyn_fifo_write_ctrl #(
         .ADDR_WIDTH(ADDR_WIDTH),
         .PTR_WIDTH(PTR_WIDTH)
-    ) u_write_ctrl (
+    ) write_ctrl_inst (
         .wr_clk(wr_clk),
-        .wr_rst_n(wr_rst_n),
+        .wr_rst_n(fifo_rst_n),
         .wr_reset_done(wr_reset_done),
         .wr_en(wr_en),
         .rd_gray_sync(rd_gray_sync),
@@ -98,9 +103,9 @@ module asyn_fifo #(
     asyn_fifo_read_ctrl #(
         .ADDR_WIDTH(ADDR_WIDTH),
         .PTR_WIDTH(PTR_WIDTH)
-    ) u_read_ctrl (
+    ) read_ctrl_inst (
         .rd_clk(rd_clk),
-        .rd_rst_n(rd_rst_n),
+        .rd_rst_n(fifo_rst_n),
         .rd_reset_done(rd_reset_done),
         .rd_en(rd_en),
         .wr_gray_sync(wr_gray_sync),
@@ -116,13 +121,13 @@ module asyn_fifo #(
         .DATA_WIDTH(DATA_WIDTH),
         .DEPTH(DEPTH),
         .ADDR_WIDTH(ADDR_WIDTH)
-    ) u_memory (
+    ) memory_inst (
         .wr_clk(wr_clk),
         .wr_accept(wr_accept),
         .wr_addr(wr_addr),
         .wr_data(wr_data),
         .rd_clk(rd_clk),
-        .rd_rst_n(rd_rst_n),
+        .rd_rst_n(fifo_rst_n),
         .rd_reset_done(rd_reset_done),
         .rd_accept(rd_accept),
         .rd_addr(rd_addr),
