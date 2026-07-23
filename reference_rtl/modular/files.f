@@ -1,0 +1,6 @@
+asyn_fifo_reset_sync.sv
+asyn_fifo_gray_sync.sv
+asyn_fifo_write_ctrl.sv
+asyn_fifo_read_ctrl.sv
+asyn_fifo_memory.sv
+asyn_fifo_modular_reference.sv
